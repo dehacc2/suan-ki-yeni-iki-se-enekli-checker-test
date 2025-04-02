@@ -4,7 +4,7 @@ import random
 import requests
 import time
 
-TOKEN = "7873610003:AAE_8jU0VwSuH9rAWyKxew9vQeTJFra2GCY"
+TOKEN = "7818194270:AAEzLxEoao_JxR2sqMkGfJ5eALLketes6Yc"
 
 bot = telebot.TeleBot(TOKEN)
 
