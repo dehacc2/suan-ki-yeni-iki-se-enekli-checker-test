@@ -3,6 +3,7 @@ from telebot import types
 import random
 import requests
 import time
+import threading
 
 TOKEN = "7818194270:AAEzLxEoao_JxR2sqMkGfJ5eALLketes6Yc"  # GÜNCELLENEN TOKEN
 
@@ -208,8 +209,8 @@ def kart_olustur(message):
     try:
         if card_data[chat_id]["type"] == "cc_olustur":
             count = card_data[chat_id]["adet"]
-            firm = card_data[chat_id]["firma"]
-            cards = generate_credit_cards(count, bin_number=firm)
+            firma = card_data[chat_id]["firma"]
+            cards = generate_credit_cards(count, bin_number=firma)
             with open("H#shtaginc Seçili Kartlar.txt", "w", encoding="utf-8") as f:
                 f.write("\n".join(cards))
             with open("H#shtaginc Seçili Kartlar.txt", "rb") as f:
@@ -232,7 +233,8 @@ def kart_olustur(message):
     except Exception as e:
         bot.send_message(chat_id, f"Kart oluştururken hata oluştu: {e}")
     finally:
-        del card_data[chat_id]  # Kart verilerini sil (finally içinde)
+        if chat_id in card_data:
+            del card_data[chat_id]  # Kart verilerini sil (finally içinde)
 
 
 # ... (Diğer fonksiyonlar aynı kalıyor)
