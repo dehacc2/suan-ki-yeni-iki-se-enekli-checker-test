@@ -113,7 +113,7 @@ def kart_secimi(call):
     markup = types.InlineKeyboardMarkup(row_width=2)  # 2 kolon olsun
     yurtdisi_button = types.InlineKeyboardButton("Yurt Dışı", callback_data=f"{call.data}_yurtdisi")
     yurtici_button = types.InlineKeyboardButton("Yurt İçi", callback_data=f"{call.data}_yurtici")
-    markup.add(yurtdisi_button, yurtiçi_button)
+    markup.add(yurtdisi_button, yurtici_button)
     bot.send_message(chat_id, "Yurt içi mi, yurt dışı mı?", reply_markup=markup)
     bot.answer_callback_query(call.id)  # QUERY_ID_INVALID hatasını çözmek için ekledik
 
@@ -217,7 +217,7 @@ def kart_olustur(message):
                 bot.send_document(chat_id, f)
         elif card_data[chat_id]["type"] == "karisik_olustur":
             count = card_data[chat_id]["adet"]
-            cards = generate_credit_cards(count)
+            cards = generate_credit_cards(count, yurt_tipi=card_data[chat_id].get('yurt_tipi')) #Yurt tipini gönder
             with open("H#shtaginc Karışık Kartlar.txt", "w", encoding="utf-8") as f:
                 f.write("\n".join(cards))
             with open("H#shtaginc Karışık Kartlar.txt", "rb") as f:
@@ -225,7 +225,7 @@ def kart_olustur(message):
         elif card_data[chat_id]["type"] == "cc_cesitlilik":
             count = card_data[chat_id]["adet"]
             firma = card_data[chat_id]["firma"]
-            cards = generate_credit_cards(count, card_types=[firma])
+            cards = generate_credit_cards(count, card_types=[firma], yurt_tipi=card_data[chat_id].get('yurt_tipi')) #Yurt tipini gönder
             with open("H#shtaginc Çeşitli Kartlar.txt", "w", encoding="utf-8") as f:
                 f.write("\n".join(cards))
             with open("H#shtaginc Çeşitli Kartlar.txt", "rb") as f:
