@@ -199,39 +199,37 @@ def onay_secimi(call):
 
 def kart_olustur(message):
     chat_id = message.chat.id
-    if card_data[chat_id]["type"] == "cc_olustur":
-        try:
+    global card_data
+
+    try:
+        if card_data[chat_id]["type"] == "cc_olustur":
             count = card_data[chat_id]["adet"]
             firm = card_data[chat_id]["firma"]
-            cards = generate_credit_cards(count, bin_number=firm)  # bank,city silindi
+            cards = generate_credit_cards(count, bin_number=firm)
             with open("H#shtaginc Seçili Kartlar.txt", "w", encoding="utf-8") as f:
                 f.write("\n".join(cards))
             with open("H#shtaginc Seçili Kartlar.txt", "rb") as f:
                 bot.send_document(chat_id, f)
-        except Exception as e:
-            bot.send_message(chat_id, f"Kart oluştururken hata oluştu: {e}")
-    elif card_data[chat_id]["type"] == "karisik_olustur":
-        try:
+        elif card_data[chat_id]["type"] == "karisik_olustur":
             count = card_data[chat_id]["adet"]
             cards = generate_credit_cards(count)
             with open("H#shtaginc Karışık Kartlar.txt", "w", encoding="utf-8") as f:
                 f.write("\n".join(cards))
             with open("H#shtaginc Karışık Kartlar.txt", "rb") as f:
                 bot.send_document(chat_id, f)
-        except Exception as e:
-            bot.send_message(chat_id, f"Kart oluştururken hata oluştu: {e}")
-    elif card_data[chat_id]["type"] == "cc_cesitlilik":
-        try:
+        elif card_data[chat_id]["type"] == "cc_cesitlilik":
             count = card_data[chat_id]["adet"]
             firm = card_data[chat_id]["firma"]
-            cards = generate_credit_cards(count, card_types=[firm])  # Tek firma olarak liste içinde gönder
+            cards = generate_credit_cards(count, card_types=[firm])
             with open("H#shtaginc Çeşitli Kartlar.txt", "w", encoding="utf-8") as f:
                 f.write("\n".join(cards))
             with open("H#shtaginc Çeşitli Kartlar.txt", "rb") as f:
                 bot.send_document(chat_id, f)
-        except Exception as e:
-            bot.send_message(chat_id, f"Kart oluştururken hata oluştu: {e}")
-    del card_data[chat_id] #Kart verilerini sil
+    except Exception as e:
+        bot.send_message(chat_id, f"Kart oluştururken hata oluştu: {e}")
+    finally:
+        del card_data[chat_id]  # Kart verilerini sil (finally içinde)
+
 
 # ... (Diğer fonksiyonlar aynı kalıyor)
 
@@ -240,7 +238,8 @@ def generate_random_cards_handler(message):
     chat_id = message.chat.id
     try:
         count = int(message.text)
-        card_data[chat_id] = {"type": "karisik_olustur", "adet": count}  # Verileri kaydet
+        card_data[chat_id] = {"type": "karisik_olustur", "adet": count, "yurt_tipi": card_data.get(chat_id, {}).get('yurt_tipi', 'Belirtilmedi')}  # Yurt tipi kaydet
+
         onay_mesaji = f"Seçimler:\n" \
                       f"✅ Yurt Tipi: {card_data[chat_id].get('yurt_tipi', 'Belirtilmedi')}\n" \
                       f"✅ Adet: {count}"
