@@ -4,7 +4,7 @@ import random
 import requests
 import time
 
-TOKEN = "7818194270:AAEzLxEoao_JxR2sqMkGfJ5eALLketes6Yc"
+TOKEN = "7818194270:AAEzLxEoao_JxR2sqMkGfJ5eALLketes6Yc"  # GÜNCELLENEN TOKEN
 
 bot = telebot.TeleBot(TOKEN)
 
@@ -106,110 +106,85 @@ def start(message):
 @bot.callback_query_handler(func=lambda call: call.data in ["cc_olustur", "karisik_olustur", "cc_cesitlilik"])
 def kart_secimi(call):
     if call.data == "cc_olustur":
-        markup = types.InlineKeyboardMarkup(row_width=1)
-        yurtdisi_button = types.InlineKeyboardButton("Yurt Dışı Kart", callback_data="yurtdisi_cc")
-        yurtici_button = types.InlineKeyboardButton("Yurt İçi Kart", callback_data="yurtici_cc")
-        markup.add(yurtdisi_button, yurtici_button)
+        markup = types.InlineKeyboardMarkup(row_width=2) # 2 kolon olsun
+        yurtdisi_button = types.InlineKeyboardButton("Yurt Dışı", callback_data="cc_yurtdisi")
+        yurtici_button = types.InlineKeyboardButton("Yurt İçi", callback_data="cc_yurtici")
+        markup.add(yurtdisi_button, yurtiçi_button)
         bot.send_message(call.message.chat.id, "Yurt içi mi, yurt dışı mı?", reply_markup=markup)
     elif call.data == "karisik_olustur":
-        markup = types.InlineKeyboardMarkup(row_width=1)
-        yurtdisi_button = types.InlineKeyboardButton("Yurt Dışı Kart", callback_data="yurtdisi_karisik")
-        yurtici_button = types.InlineKeyboardButton("Yurt İçi Kart", callback_data="yurtici_karisik")
+        markup = types.InlineKeyboardMarkup(row_width=2) # 2 kolon olsun
+        yurtdisi_button = types.InlineKeyboardButton("Yurt Dışı", callback_data="karisik_yurtdisi")
+        yurtici_button = types.InlineKeyboardButton("Yurt İçi", callback_data="karisik_yurtici")
         markup.add(yurtdisi_button, yurtici_button)
         bot.send_message(call.message.chat.id, "Yurt içi mi, yurt dışı mı?", reply_markup=markup)
     elif call.data == "cc_cesitlilik":
-        markup = types.InlineKeyboardMarkup(row_width=1)
-        yurtdisi_button = types.InlineKeyboardButton("Yurt Dışı Kart", callback_data="yurtdisi_cesitlilik")
-        yurtici_button = types.InlineKeyboardButton("Yurt İçi Kart", callback_data="yurtici_cesitlilik")
+        markup = types.InlineKeyboardMarkup(row_width=2) # 2 kolon olsun
+        yurtdisi_button = types.InlineKeyboardButton("Yurt Dışı", callback_data="cesitlilik_yurtdisi")
+        yurtici_button = types.InlineKeyboardButton("Yurt İçi", callback_data="cesitlilik_yurtici")
         markup.add(yurtdisi_button, yurtici_button)
         bot.send_message(call.message.chat.id, "Yurt içi mi, yurt dışı mı?", reply_markup=markup)
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("yurtdisi_") or call.data.startswith("yurtici_"))
-def kart_turu_secimi(call):
-    if call.data.startswith("yurtdisi_"):
-        kart_turu = call.data.split("_")[1]
-        if kart_turu == "cc":
-            # "Credit Card Oluştur" için yurt dışı kart türleri
-            markup = types.InlineKeyboardMarkup(row_width=1)
-            visa_button = types.InlineKeyboardButton("Visa", callback_data="visa")
-            mastercard_button = types.InlineKeyboardButton("MasterCard", callback_data="mastercard")
-            amex_button = types.InlineKeyboardButton("Amex", callback_data="amex")
-            discover_button = types.InlineKeyboardButton("Discover", callback_data="discover")
-            jcb_button = types.InlineKeyboardButton("JCB", callback_data="jcb")
-            diners_button = types.InlineKeyboardButton("Diners Club", callback_data="diners")
-            maestro_button = types.InlineKeyboardButton("Maestro", callback_data="maestro")
-            random_button = types.InlineKeyboardButton("Rastgele", callback_data="rastgele")
-            markup.add(visa_button, mastercard_button, amex_button, discover_button, jcb_button, diners_button, maestro_button, random_button)
-            bot.send_message(call.message.chat.id, "Hangi kart türünü istersin?", reply_markup=markup)
-            bot.register_next_step_handler(call.message, handle_firm_selection)
-        elif kart_turu == "karisik":
-            # "Karışık Mod CC Oluştur" için yurt dışı kart türleri
-            bot.send_message(call.message.chat.id, "Kaç adet kart oluşturulacak?")
-            bot.register_next_step_handler(call.message, generate_random_cards_handler)
-        elif kart_turu == "cesitlilik":
-            # "Kart Çeşitliliği Oluştur" için yurt dışı kart türleri
-            markup = types.InlineKeyboardMarkup(row_width=1)
-            visa_button = types.InlineKeyboardButton("Visa", callback_data="cc_cesitlilik_visa")
-            mastercard_button = types.InlineKeyboardButton("MasterCard", callback_data="cc_cesitlilik_mastercard")
-            amex_button = types.InlineKeyboardButton("Amex", callback_data="cc_cesitlilik_amex")
-            discover_button = types.InlineKeyboardButton("Discover", callback_data="cc_cesitlilik_discover")
-            jcb_button = types.InlineKeyboardButton("JCB", callback_data="cc_cesitlilik_jcb")
-            diners_button = types.InlineKeyboardButton("Diners Club", callback_data="cc_cesitlilik_diners")
-            maestro_button = types.InlineKeyboardButton("Maestro", callback_data="cc_cesitlilik_maestro")
-            all_button = types.InlineKeyboardButton("Tümünü Seç", callback_data="cc_cesitlilik_all")
-            markup.add(visa_button, mastercard_button, amex_button, discover_button, jcb_button, diners_button, maestro_button, all_button)
-            bot.send_message(call.message.chat.id, "Hangi kart türlerini istiyorsun? (En az birini seçin)", reply_markup=markup)
-    elif call.data.startswith("yurtici_"):
-        kart_turu = call.data.split("_")[1]
-        if kart_turu == "cc":
-            # "Credit Card Oluştur" için yurt içi kart türleri
-            markup = types.InlineKeyboardMarkup(row_width=1)
-            bkm_button = types.InlineKeyboardButton("BKM Express", callback_data="bkm")
-            troy_button = types.InlineKeyboardButton("Troy Kart", callback_data="troy")
-            param_button = types.InlineKeyboardButton("ParamKart", callback_data="param")
+@bot.callback_query_handler(func=lambda call: call.data.endswith("yurtdisi") or call.data.endswith("yurtici"))
+def yurtdisi_yurtici_secimi(call):
+    kart_turu = call.data.split("_")[0]  # Kart türünü al (cc, karisik, cesitlilik)
+    secim = call.data.split("_")[1] # yurtdisi veya yurtici
+
+    if kart_turu == "cc":
+        if secim == "yurtdisi":
+            markup = types.InlineKeyboardMarkup(row_width=2)
+            visa_button = types.InlineKeyboardButton("Visa", callback_data="cc_firma_Visa")
+            mastercard_button = types.InlineKeyboardButton("MasterCard", callback_data="cc_firma_MasterCard")
+            amex_button = types.InlineKeyboardButton("Amex", callback_data="cc_firma_Amex")
+            discover_button = types.InlineKeyboardButton("Discover", callback_data="cc_firma_Discover")
+            jcb_button = types.InlineKeyboardButton("JCB", callback_data="cc_firma_JCB")
+            diners_button = types.InlineKeyboardButton("Diners Club", callback_data="cc_firma_Diners Club")
+            maestro_button = types.InlineKeyboardButton("Maestro", callback_data="cc_firma_Maestro")
+            markup.add(visa_button, mastercard_button, amex_button, discover_button, jcb_button, diners_button, maestro_button)
+            bot.send_message(call.message.chat.id, "Hangi firma?", reply_markup=markup)
+        elif secim == "yurtici":
+            markup = types.InlineKeyboardMarkup(row_width=2)
+            bkm_button = types.InlineKeyboardButton("BKM Express", callback_data="cc_firma_BKM Express")
+            troy_button = types.InlineKeyboardButton("Troy Kart", callback_data="cc_firma_Troy Kart")
+            param_button = types.InlineKeyboardButton("ParamKart", callback_data="cc_firma_ParamKart")
             markup.add(bkm_button, troy_button, param_button)
-            bot.send_message(call.message.chat.id, "Hangi yurt içi kart türünü istersin?", reply_markup=markup)
-            bot.register_next_step_handler(call.message, handle_firm_selection)
-        elif kart_turu == "karisik":
-            # "Karışık Mod CC Oluştur" için yurt içi kart türleri
-            bot.send_message(call.message.chat.id, "Kaç adet kart oluşturulacak?")
-            bot.register_next_step_handler(call.message, generate_random_cards_handler)
-        elif kart_turu == "cesitlilik":
-            # "Kart Çeşitliliği Oluştur" için yurt içi kart türleri
-            markup = types.InlineKeyboardMarkup(row_width=1)
-            bkm_button = types.InlineKeyboardButton("BKM Express", callback_data="cc_cesitlilik_bkm")
-            troy_button = types.InlineKeyboardButton("Troy Kart", callback_data="cc_cesitlilik_troy")
-            param_button = types.InlineKeyboardButton("ParamKart", callback_data="cc_cesitlilik_param")
+            bot.send_message(call.message.chat.id, "Hangi firma?", reply_markup=markup)
+    elif kart_turu == "karisik":
+        bot.send_message(call.message.chat.id, "Kaç adet?", reply_markup=types.ForceReply(selective=False))
+        bot.register_next_step_handler(call.message, generate_random_cards_handler) #Adet kısmını buraya aldık
+    elif kart_turu == "cesitlilik":
+        if secim == "yurtdisi":
+            markup = types.InlineKeyboardMarkup(row_width=2)
+            visa_button = types.InlineKeyboardButton("Visa", callback_data="cesitlilik_firma_Visa")
+            mastercard_button = types.InlineKeyboardButton("MasterCard", callback_data="cesitlilik_firma_MasterCard")
+            amex_button = types.InlineKeyboardButton("Amex", callback_data="cesitlilik_firma_Amex")
+            discover_button = types.InlineKeyboardButton("Discover", callback_data="cesitlilik_firma_Discover")
+            jcb_button = types.InlineKeyboardButton("JCB", callback_data="cesitlilik_firma_JCB")
+            diners_button = types.InlineKeyboardButton("Diners Club", callback_data="cesitlilik_firma_Diners Club")
+            maestro_button = types.InlineKeyboardButton("Maestro", callback_data="cesitlilik_firma_Maestro")
+            markup.add(visa_button, mastercard_button, amex_button, discover_button, jcb_button, diners_button, maestro_button)
+            bot.send_message(call.message.chat.id, "Hangi firma?", reply_markup=markup)
+        elif secim == "yurtici":
+            markup = types.InlineKeyboardMarkup(row_width=2)
+            bkm_button = types.InlineKeyboardButton("BKM Express", callback_data="cesitlilik_firma_BKM Express")
+            troy_button = types.InlineKeyboardButton("Troy Kart", callback_data="cesitlilik_firma_Troy Kart")
+            param_button = types.InlineKeyboardButton("ParamKart", callback_data="cesitlilik_firma_ParamKart")
             markup.add(bkm_button, troy_button, param_button)
-            bot.send_message(call.message.chat.id, "Hangi yurt içi kart türlerini istiyorsun? (En az birini seçin)", reply_markup=markup)
+            bot.send_message(call.message.chat.id, "Hangi firma?", reply_markup=markup)
 
-firm_data = {}
-
-def handle_firm_selection(message):
-    firm_data[message.chat.id] = {"firm": message.text}
-    markup = types.InlineKeyboardMarkup(row_width=1)
-    bank_options = ["Garanti", "Akbank", "Yapı Kredi", "İş Bankası"]
-    for bank in bank_options:
-        markup.add(types.InlineKeyboardButton(bank, callback_data=f"bank_{bank}"))
-    bot.send_message(message.chat.id, "Hangi bankayı istersin?", reply_markup=markup)
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith("bank_"))
-def handle_bank_selection(call):
-    selected_bank = call.data.split("bank_")[1]
-    firm_data[call.message.chat.id]["bank"] = selected_bank
-    bot.send_message(call.message.chat.id, "Hangi şehri istersin?")
-    bot.register_next_step_handler(call.message, handle_city_selection)
-
-def handle_city_selection(message):
-    firm_data[message.chat.id]["city"] = message.text
-    bot.send_message(message.chat.id, "Kaç kart oluşturulsun?")
-    bot.register_next_step_handler(message, generate_selected_cards)
+@bot.callback_query_handler(func=lambda call: call.data.startswith("cc_firma_") or call.data.startswith("cesitlilik_firma_"))
+def firma_secimi(call):
+    global kart_turu_global
+    kart_turu_global = call.data.split("_")[0] #cc veya cesitlilik bilgisini aldık
+    bot.send_message(call.message.chat.id, "Kaç adet?", reply_markup=types.ForceReply(selective=False))
+    bot.register_next_step_handler(call.message, generate_selected_cards)  #Adet kısmını buraya aldık
 
 def generate_selected_cards(message):
+    global kart_turu_global
     try:
         count = int(message.text)
-        data = firm_data.pop(message.chat.id)
-        cards = generate_credit_cards(count, bin_number=data.get("firm"), bank=data.get("bank"), city=data.get("city"))
+        firm = call.data.split("_")[2] # Firma bilgisini aldık.
+        data = {"firm":firm}  #Diğer kısımları sildik
+        cards = generate_credit_cards(count, bin_number=data.get("firm"))  #bank,city silindi
         with open("H#shtaginc Seçili Kartlar.txt", "w", encoding="utf-8") as f:
             f.write("\n".join(cards))
         with open("H#shtaginc Seçili Kartlar.txt", "rb") as f:
@@ -253,7 +228,7 @@ def handle_iban_check(message):
 
 @bot.callback_query_handler(func=lambda call: call.data == "iban_uret")
 def iban_uret(call):
-    markup = types.InlineKeyboardMarkup(row_width=1)
+    markup = types.InlineKeyboardMarkup(row_width=2)
     tr_button = types.InlineKeyboardButton("Türkiye", callback_data="iban_uret_tr")
     de_button = types.InlineKeyboardButton("Almanya", callback_data="iban_uret_de")
     random_button = types.InlineKeyboardButton("Rastgele Ülke", callback_data="iban_uret_random")
