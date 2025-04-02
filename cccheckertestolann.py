@@ -114,6 +114,7 @@ def kart_secimi(call):
     yurtici_button = types.InlineKeyboardButton("Yurt İçi", callback_data=f"{call.data}_yurtici")
     markup.add(yurtdisi_button, yurtiçi_button)
     bot.send_message(chat_id, "Yurt içi mi, yurt dışı mı?", reply_markup=markup)
+    bot.answer_callback_query(call.id)  # QUERY_ID_INVALID hatasını çözmek için ekledik
 
 @bot.callback_query_handler(func=lambda call: call.data.endswith("yurtdisi") or call.data.endswith("yurtici"))
 def yurtdisi_yurtici_secimi(call):
@@ -121,6 +122,7 @@ def yurtdisi_yurtici_secimi(call):
     kart_turu = call.data.split("_")[0]  # Kart türünü al (cc_olustur, karisik_olustur, cesitlilik)
     secim = call.data.split("_")[1]  # yurtdisi veya yurtici
     card_data[chat_id]["yurt_tipi"] = secim  # Yurt tipini kaydet
+    bot.answer_callback_query(call.id)  # QUERY_ID_INVALID hatasını çözmek için ekledik
 
     if kart_turu == "cc_olustur":
         if secim == "yurtdisi":
@@ -169,6 +171,7 @@ def firma_secimi(call):
     chat_id = call.message.chat.id
     firma = call.data.split("_")[2]  # Firma bilgisini aldık
     card_data[chat_id]["firma"] = firma  # Firma bilgisini kaydet
+    bot.answer_callback_query(call.id)  # QUERY_ID_INVALID hatasını çözmek için ekledik
     bot.send_message(chat_id, "Kaç adet?", reply_markup=types.ForceReply(selective=False))
     bot.register_next_step_handler(call.message, adet_secimi)  # Adet kısmını buraya aldık
 
@@ -192,6 +195,7 @@ def adet_secimi(message):
 @bot.callback_query_handler(func=lambda call: call.data in ["kart_olustur_onay", "kart_olustur_red"])
 def onay_secimi(call):
     chat_id = call.message.chat.id
+    bot.answer_callback_query(call.id)  # QUERY_ID_INVALID hatasını çözmek için ekledik
     if call.data == "kart_olustur_onay":
         kart_olustur(call.message)  # Kart oluşturma fonksiyonunu çağır
     else:
@@ -219,8 +223,8 @@ def kart_olustur(message):
                 bot.send_document(chat_id, f)
         elif card_data[chat_id]["type"] == "cc_cesitlilik":
             count = card_data[chat_id]["adet"]
-            firm = card_data[chat_id]["firma"]
-            cards = generate_credit_cards(count, card_types=[firm])
+            firma = card_data[chat_id]["firma"]
+            cards = generate_credit_cards(count, card_types=[firma])
             with open("H#shtaginc Çeşitli Kartlar.txt", "w", encoding="utf-8") as f:
                 f.write("\n".join(cards))
             with open("H#shtaginc Çeşitli Kartlar.txt", "rb") as f:
