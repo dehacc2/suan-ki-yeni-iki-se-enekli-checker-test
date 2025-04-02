@@ -27,7 +27,7 @@ def generate_credit_card(bin_number, length):
         if luhn(card_number):
             return card_number
 
-def generate_credit_cards(count, bin_number=None, length=None, bank=None, city=None, card_types=None):
+def generate_credit_cards(count, bin_number=None, length=None, bank=None, city=None, card_types=None, yurt_tipi=None):
     cards = []
     available_bins = ['4', '5', '6', '37', '6', '35', '36', '5018']
     if card_types:
@@ -43,7 +43,11 @@ def generate_credit_cards(count, bin_number=None, length=None, bank=None, city=N
         bins = [b for b in bins if b]  # None olanları temizle
     for _ in range(count):
         if not bin_number:
-            if card_types:
+            if yurt_tipi == "yurtdisi":
+                bins = ['4', '5', '37', '6']  # Yurt dışı BIN'leri
+                bin_number = random.choice(bins)
+            elif yurt_tipi == "yurtici":
+                bins = ['5018']  # Yurt içi BIN'leri
                 bin_number = random.choice(bins)
             else:
                 bin_number = random.choice(available_bins)
@@ -113,9 +117,9 @@ def kart_secimi(call):
     markup = types.InlineKeyboardMarkup(row_width=2)  # 2 kolon olsun
     yurtdisi_button = types.InlineKeyboardButton("Yurt Dışı", callback_data=f"{call.data}_yurtdisi")
     yurtici_button = types.InlineKeyboardButton("Yurt İçi", callback_data=f"{call.data}_yurtici")
-    markup.add(yurtdisi_button, yurtici_button)
+    markup.add(yurtdisi_button, yurtiçi_button)
     bot.send_message(chat_id, "Yurt içi mi, yurt dışı mı?", reply_markup=markup)
-    bot.answer_callback_query(call.id)  # QUERY_ID_INVALID hatasını çözmek için ekledik
+    bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data.endswith("yurtdisi") or call.data.endswith("yurtici"))
 def yurtdisi_yurtici_secimi(call):
@@ -123,56 +127,54 @@ def yurtdisi_yurtici_secimi(call):
     kart_turu = call.data.split("_")[0]  # Kart türünü al (cc_olustur, karisik_olustur, cesitlilik)
     secim = call.data.split("_")[1]  # yurtdisi veya yurtici
     card_data[chat_id]["yurt_tipi"] = secim  # Yurt tipini kaydet
-    bot.answer_callback_query(call.id)  # QUERY_ID_INVALID hatasını çözmek için ekledik
+    bot.answer_callback_query(call.id)
 
     if kart_turu == "cc_olustur":
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        visa_button = types.InlineKeyboardButton("Visa", callback_data=f"cc_firma_Visa_{secim}")
+        mastercard_button = types.InlineKeyboardButton("MasterCard", callback_data=f"cc_firma_MasterCard_{secim}")
+        amex_button = types.InlineKeyboardButton("Amex", callback_data=f"cc_firma_Amex_{secim}")
+        discover_button = types.InlineKeyboardButton("Discover", callback_data=f"cc_firma_Discover_{secim}")
+        jcb_button = types.InlineKeyboardButton("JCB", callback_data=f"cc_firma_JCB_{secim}")
+        diners_button = types.InlineKeyboardButton("Diners Club", callback_data=f"cc_firma_Diners Club_{secim}")
+        maestro_button = types.InlineKeyboardButton("Maestro", callback_data=f"cc_firma_Maestro_{secim}")
+        bkm_button = types.InlineKeyboardButton("BKM Express", callback_data=f"cc_firma_BKM Express_{secim}")
+        troy_button = types.InlineKeyboardButton("Troy Kart", callback_data=f"cc_firma_Troy Kart_{secim}")
+        param_button = types.InlineKeyboardButton("ParamKart", callback_data=f"cc_firma_ParamKart_{secim}")
+        
         if secim == "yurtdisi":
-            markup = types.InlineKeyboardMarkup(row_width=2)
-            visa_button = types.InlineKeyboardButton("Visa", callback_data="cc_firma_Visa")
-            mastercard_button = types.InlineKeyboardButton("MasterCard", callback_data="cc_firma_MasterCard")
-            amex_button = types.InlineKeyboardButton("Amex", callback_data="cc_firma_Amex")
-            discover_button = types.InlineKeyboardButton("Discover", callback_data="cc_firma_Discover")
-            jcb_button = types.InlineKeyboardButton("JCB", callback_data="cc_firma_JCB")
-            diners_button = types.InlineKeyboardButton("Diners Club", callback_data="cc_firma_Diners Club")
-            maestro_button = types.InlineKeyboardButton("Maestro", callback_data="cc_firma_Maestro")
             markup.add(visa_button, mastercard_button, amex_button, discover_button, jcb_button, diners_button, maestro_button)
-            bot.send_message(chat_id, "Hangi firma?", reply_markup=markup)
         elif secim == "yurtici":
-            markup = types.InlineKeyboardMarkup(row_width=2)
-            bkm_button = types.InlineKeyboardButton("BKM Express", callback_data="cc_firma_BKM Express")
-            troy_button = types.InlineKeyboardButton("Troy Kart", callback_data="cc_firma_Troy Kart")
-            param_button = types.InlineKeyboardButton("ParamKart", callback_data="cc_firma_ParamKart")
             markup.add(bkm_button, troy_button, param_button)
-            bot.send_message(chat_id, "Hangi firma?", reply_markup=markup)
+        bot.send_message(chat_id, "Hangi firma?", reply_markup=markup)
     elif kart_turu == "karisik_olustur":
         bot.send_message(chat_id, "Kaç adet?", reply_markup=types.ForceReply(selective=False))
         bot.register_next_step_handler(call.message, generate_random_cards_handler)  # Adet kısmını buraya aldık
     elif kart_turu == "cc_cesitlilik":
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        visa_button = types.InlineKeyboardButton("Visa", callback_data=f"cesitlilik_firma_Visa_{secim}")
+        mastercard_button = types.InlineKeyboardButton("MasterCard", callback_data=f"cesitlilik_firma_MasterCard_{secim}")
+        amex_button = types.InlineKeyboardButton("Amex", callback_data=f"cesitlilik_firma_Amex_{secim}")
+        discover_button = types.InlineKeyboardButton("Discover", callback_data=f"cesitlilik_firma_Discover_{secim}")
+        jcb_button = types.InlineKeyboardButton("JCB", callback_data=f"cesitlilik_firma_JCB_{secim}")
+        diners_button = types.InlineKeyboardButton("Diners Club", callback_data=f"cesitlilik_firma_Diners Club_{secim}")
+        maestro_button = types.InlineKeyboardButton("Maestro", callback_data=f"cesitlilik_firma_Maestro_{secim}")
+        bkm_button = types.InlineKeyboardButton("BKM Express", callback_data=f"cesitlilik_firma_BKM Express_{secim}")
+        troy_button = types.InlineKeyboardButton("Troy Kart", callback_data=f"cesitlilik_firma_Troy Kart_{secim}")
+        param_button = types.InlineKeyboardButton("ParamKart", callback_data=f"cesitlilik_firma_ParamKart_{secim}")
+        
         if secim == "yurtdisi":
-            markup = types.InlineKeyboardMarkup(row_width=2)
-            visa_button = types.InlineKeyboardButton("Visa", callback_data="cesitlilik_firma_Visa")
-            mastercard_button = types.InlineKeyboardButton("MasterCard", callback_data="cesitlilik_firma_MasterCard")
-            amex_button = types.InlineKeyboardButton("Amex", callback_data="cesitlilik_firma_Amex")
-            discover_button = types.InlineKeyboardButton("Discover", callback_data="cesitlilik_firma_Discover")
-            jcb_button = types.InlineKeyboardButton("JCB", callback_data="cesitlilik_firma_JCB")
-            diners_button = types.InlineKeyboardButton("Diners Club", callback_data="cesitlilik_firma_Diners Club")
-            maestro_button = types.InlineKeyboardButton("Maestro", callback_data="cesitlilik_firma_Maestro")
             markup.add(visa_button, mastercard_button, amex_button, discover_button, jcb_button, diners_button, maestro_button)
-            bot.send_message(chat_id, "Hangi firma?", reply_markup=markup)
         elif secim == "yurtici":
-            markup = types.InlineKeyboardMarkup(row_width=2)
-            bkm_button = types.InlineKeyboardButton("BKM Express", callback_data="cesitlilik_firma_BKM Express")
-            troy_button = types.InlineKeyboardButton("Troy Kart", callback_data="cesitlilik_firma_Troy Kart")
-            param_button = types.InlineKeyboardButton("ParamKart", callback_data="cesitlilik_firma_ParamKart")
             markup.add(bkm_button, troy_button, param_button)
-            bot.send_message(chat_id, "Hangi firma?", reply_markup=markup)
+        bot.send_message(chat_id, "Hangi firma?", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("cc_firma_") or call.data.startswith("cesitlilik_firma_"))
 def firma_secimi(call):
     chat_id = call.message.chat.id
     firma = call.data.split("_")[2]  # Firma bilgisini aldık
     card_data[chat_id]["firma"] = firma  # Firma bilgisini kaydet
-    bot.answer_callback_query(call.id)  # QUERY_ID_INVALID hatasını çözmek için ekledik
+    bot.answer_callback_query(call.id)
     bot.send_message(chat_id, "Kaç adet?", reply_markup=types.ForceReply(selective=False))
     bot.register_next_step_handler(call.message, adet_secimi)  # Adet kısmını buraya aldık
 
@@ -196,7 +198,7 @@ def adet_secimi(message):
 @bot.callback_query_handler(func=lambda call: call.data in ["kart_olustur_onay", "kart_olustur_red"])
 def onay_secimi(call):
     chat_id = call.message.chat.id
-    bot.answer_callback_query(call.id)  # QUERY_ID_INVALID hatasını çözmek için ekledik
+    bot.answer_callback_query(call.id)
     if call.data == "kart_olustur_onay":
         kart_olustur(call.message)  # Kart oluşturma fonksiyonunu çağır
     else:
@@ -210,14 +212,16 @@ def kart_olustur(message):
         if card_data[chat_id]["type"] == "cc_olustur":
             count = card_data[chat_id]["adet"]
             firma = card_data[chat_id]["firma"]
-            cards = generate_credit_cards(count, bin_number=firma)
+            yurt_tipi = card_data[chat_id]["yurt_tipi"]
+            cards = generate_credit_cards(count, bin_number=firma, yurt_tipi=yurt_tipi)
             with open("H#shtaginc Seçili Kartlar.txt", "w", encoding="utf-8") as f:
                 f.write("\n".join(cards))
             with open("H#shtaginc Seçili Kartlar.txt", "rb") as f:
                 bot.send_document(chat_id, f)
         elif card_data[chat_id]["type"] == "karisik_olustur":
             count = card_data[chat_id]["adet"]
-            cards = generate_credit_cards(count, yurt_tipi=card_data[chat_id].get('yurt_tipi')) #Yurt tipini gönder
+            yurt_tipi = card_data[chat_id].get('yurt_tipi')
+            cards = generate_credit_cards(count, yurt_tipi=yurt_tipi)
             with open("H#shtaginc Karışık Kartlar.txt", "w", encoding="utf-8") as f:
                 f.write("\n".join(cards))
             with open("H#shtaginc Karışık Kartlar.txt", "rb") as f:
@@ -225,7 +229,8 @@ def kart_olustur(message):
         elif card_data[chat_id]["type"] == "cc_cesitlilik":
             count = card_data[chat_id]["adet"]
             firma = card_data[chat_id]["firma"]
-            cards = generate_credit_cards(count, card_types=[firma], yurt_tipi=card_data[chat_id].get('yurt_tipi')) #Yurt tipini gönder
+            yurt_tipi = card_data[chat_id]["yurt_tipi"]
+            cards = generate_credit_cards(count, card_types=[firma], yurt_tipi=yurt_tipi)
             with open("H#shtaginc Çeşitli Kartlar.txt", "w", encoding="utf-8") as f:
                 f.write("\n".join(cards))
             with open("H#shtaginc Çeşitli Kartlar.txt", "rb") as f:
