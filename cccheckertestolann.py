@@ -9,62 +9,6 @@ TOKEN = "7818194270:AAEzLxEoao_JxR2sqMkGfJ5eALLketes6Yc"  # GÜNCELLENEN TOKEN
 
 bot = telebot.TeleBot(TOKEN)
 
-def luhn(card_number):
-    digits = [int(digit) for digit in card_number]
-    odd_digits = digits[-1::-2]
-    even_digits = digits[-2::-2]
-    total = 0
-    total += sum(odd_digits)
-    for digit in even_digits:
-        total += sum(divmod(digit * 2, 10))
-    return total % 10 == 0
-
-def generate_credit_card(bin_number, length):
-    while True:
-        card_number = bin_number + ''.join(random.choice('0123456789') for _ in range(length - len(bin_number) - 1))
-        check_digit = (10 - sum(int(d) for d in card_number[::2] + ''.join(str(sum(divmod(int(d) * 2, 10))) for d in card_number[1::2])) % 10) % 10
-        card_number += str(check_digit)
-        if luhn(card_number):
-            return card_number
-
-def generate_credit_cards(count, bin_number=None, length=None, bank=None, city=None, card_types=None, yurt_tipi=None):
-    cards = []
-    available_bins = ['4', '5', '6', '37', '6', '35', '36', '5018']
-    if card_types:
-        bins = [
-            '4' if 'Visa' in card_types else None,
-            '5' if 'MasterCard' in card_types else None,
-            '37' if 'Amex' in card_types else None,
-            '6' if 'Discover' in card_types else None,
-            '35' if 'JCB' in card_types else None,
-            '36' if 'Diners Club' in card_types else None,
-            '5018' if 'Maestro' in card_types else None
-        ]
-        bins = [b for b in bins if b]  # None olanları temizle
-    for _ in range(count):
-        if not bin_number:
-            if yurt_tipi == "yurtdisi":
-                bins = ['4', '5', '37', '6']  # Yurt dışı BIN'leri
-                bin_number = random.choice(bins)
-            elif yurt_tipi == "yurtici":
-                bins = ['5018']  # Yurt içi BIN'leri
-                bin_number = random.choice(bins)
-            else:
-                bin_number = random.choice(available_bins)
-        if not length:
-            length = random.choice([15, 16])
-        card_number = generate_credit_card(bin_number, length)
-        cvv = ''.join(random.choice('0123456789') for _ in range(3))
-        expiry_month = str(random.randint(1, 12)).zfill(2)
-        expiry_year = str(random.randint(24, 29))
-        card_info = f"{card_number}|{expiry_month}|{expiry_year}|{cvv}"
-        if bank:
-            card_info += f"|{bank}"
-        if city:
-            card_info += f"|{city}"
-        cards.append(card_info)
-    return cards
-
 def is_valid_iban(iban):
     iban = iban.upper().replace(' ', '')
     if len(iban) < 15 or len(iban) > 34 or not iban.isalnum():
@@ -99,187 +43,16 @@ def generate_random_iban(country_code, bank_code=None):
 @bot.message_handler(commands=['start'])
 def start(message):
     markup = types.InlineKeyboardMarkup(row_width=1)
-    cc_olustur_button = types.InlineKeyboardButton("Credit Card Oluştur", callback_data="cc_olustur")
-    karisik_olustur_button = types.InlineKeyboardButton("Karışık Mod CC Oluştur", callback_data="karisik_olustur")
-    cc_cesitlilik_button = types.InlineKeyboardButton("Kart Çeşitliliği Oluştur", callback_data="cc_cesitlilik")
     iban_sorgu_button = types.InlineKeyboardButton("IBAN Sorgula", callback_data="iban_sorgu")
     iban_uret_button = types.InlineKeyboardButton("Rastgele IBAN Üret", callback_data="iban_uret")
     cc_checker_button = types.InlineKeyboardButton("CC Checker", callback_data="cc_checker")
-    markup.add(cc_olustur_button, karisik_olustur_button, cc_cesitlilik_button, iban_sorgu_button, iban_uret_button, cc_checker_button)
+    markup.add(iban_sorgu_button, iban_uret_button, cc_checker_button)
     bot.send_message(message.chat.id, "Selam! Ne istersin? 😈", reply_markup=markup)
-
-card_data = {}  # Kart verilerini saklamak için sözlük
-
-@bot.callback_query_handler(func=lambda call: call.data in ["cc_olustur", "karisik_olustur", "cc_cesitlilik"])
-def kart_secimi(call):
-    chat_id = call.message.chat.id
-    card_data[chat_id] = {"type": call.data}  # Seçimi kaydet
-    markup = types.InlineKeyboardMarkup(row_width=2)  # 2 kolon olsun
-    yurtdisi_button = types.InlineKeyboardButton("Yurt Dışı", callback_data=f"{call.data}_yurtdisi")
-    yurtici_button = types.InlineKeyboardButton("Yurt İçi", callback_data=f"{call.data}_yurtici")
-    markup.add(yurtdisi_button, yurtiçi_button)
-    bot.send_message(chat_id, "Yurt içi mi, yurt dışı mı?", reply_markup=markup)
-    bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data.endswith("yurtdisi") or call.data.endswith("yurtici"))
-def yurtdisi_yurtici_secimi(call):
-    chat_id = call.message.chat.id
-    kart_turu = call.data.split("_")[0]  # Kart türünü al (cc_olustur, karisik_olustur, cesitlilik)
-    secim = call.data.split("_")[1]  # yurtdisi veya yurtici
-    card_data[chat_id]["yurt_tipi"] = secim  # Yurt tipini kaydet
-    bot.answer_callback_query(call.id)
-
-    if kart_turu == "cc_olustur":
-        if secim == "yurtdisi":
-            markup = types.InlineKeyboardMarkup(row_width=2)
-            visa_button = types.InlineKeyboardButton("Visa", callback_data=f"cc_firma_Visa")
-            mastercard_button = types.InlineKeyboardButton("MasterCard", callback_data=f"cc_firma_MasterCard")
-            amex_button = types.InlineKeyboardButton("Amex", callback_data=f"cc_firma_Amex")
-            discover_button = types.InlineKeyboardButton("Discover", callback_data=f"cc_firma_Discover")
-            jcb_button = types.InlineKeyboardButton("JCB", callback_data=f"cc_firma_JCB")
-            diners_button = types.InlineKeyboardButton("Diners Club", callback_data=f"cc_firma_Diners Club")
-            maestro_button = types.InlineKeyboardButton("Maestro", callback_data=f"cc_firma_Maestro")
-            markup.add(visa_button, mastercard_button, amex_button, discover_button, jcb_button, diners_button, maestro_button)
-            bot.send_message(chat_id, "Hangi firma?", reply_markup=markup)
-        elif secim == "yurtici":
-            markup = types.InlineKeyboardMarkup(row_width=2)
-            bkm_button = types.InlineKeyboardButton("BKM Express", callback_data="cc_firma_BKM Express")
-            troy_button = types.InlineKeyboardButton("Troy Kart", callback_data="cc_firma_Troy Kart")
-            param_button = types.InlineKeyboardButton("ParamKart", callback_data="cc_firma_ParamKart")
-            markup.add(bkm_button, troy_button, param_button)
-            bot.send_message(chat_id, "Hangi firma?", reply_markup=markup)
-    elif kart_turu == "karisik_olustur":
-        card_data[chat_id]["firma"] = "random" # random olarak işaretledik
-        bot.send_message(chat_id, "Kaç adet?", reply_markup=types.ForceReply(selective=False))
-        bot.register_next_step_handler(call.message, adet_secimi)  # Adet kısmını buraya aldık
-    elif kart_turu == "cc_cesitlilik":
-        if secim == "yurtdisi":
-            markup = types.InlineKeyboardMarkup(row_width=2)
-            visa_button = types.InlineKeyboardButton("Visa", callback_data="cesitlilik_firma_Visa")
-            mastercard_button = types.InlineKeyboardButton("MasterCard", callback_data="cesitlilik_firma_MasterCard")
-            amex_button = types.InlineKeyboardButton("Amex", callback_data="cesitlilik_firma_Amex")
-            discover_button = types.InlineKeyboardButton("Discover", callback_data="cesitlilik_firma_Discover")
-            jcb_button = types.InlineKeyboardButton("JCB", callback_data="cesitlilik_firma_JCB")
-            diners_button = types.InlineKeyboardButton("Diners Club", callback_data="cesitlilik_firma_Diners Club")
-            maestro_button = types.InlineKeyboardButton("Maestro", callback_data="cesitlilik_firma_Maestro")
-            markup.add(visa_button, mastercard_button, amex_button, discover_button, jcb_button, diners_button, maestro_button)
-            bot.send_message(chat_id, "Hangi firma?", reply_markup=markup)
-        elif secim == "yurtici":
-            markup = types.InlineKeyboardMarkup(row_width=2)
-            bkm_button = types.InlineKeyboardButton("BKM Express", callback_data="cesitlilik_firma_BKM Express")
-            troy_button = types.InlineKeyboardButton("Troy Kart", callback_data="cesitlilik_firma_Troy Kart")
-            param_button = types.InlineKeyboardButton("ParamKart", callback_data="cesitlilik_firma_ParamKart")
-            markup.add(bkm_button, troy_button, param_button)
-            bot.send_message(chat_id, "Hangi firma?", reply_markup=markup)
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith("cc_firma_") or call.data.startswith("cesitlilik_firma_"))
-def firma_secimi(call):
-    chat_id = call.message.chat.id
-    firma = call.data.split("_")[2]  # Firma bilgisini aldık
-    card_data[chat_id]["firma"] = firma  # Firma bilgisini kaydet
-    bot.answer_callback_query(call.id)
-    bot.send_message(chat_id, "Kaç adet?", reply_markup=types.ForceReply(selective=False))
-    bot.register_next_step_handler(call.message, adet_secimi)  # Adet kısmını buraya aldık
-
-def adet_secimi(message):
-    chat_id = message.chat.id
-    try:
-        adet = int(message.text)
-        card_data[chat_id]["adet"] = adet  # Adet bilgisini kaydet
-        onay_mesaji = f"Seçimler:\n" \
-                      f"✅ Yurt Tipi: {card_data[chat_id].get('yurt_tipi', 'Belirtilmedi')}\n" \
-                      f"✅ Firma: {card_data[chat_id].get('firma', 'Belirtilmedi')}\n" \
-                      f"✅ Adet: {card_data[chat_id].get('adet', 'Belirtilmedi')}"
-        markup = types.InlineKeyboardMarkup(row_width=2)
-        evet_button = types.InlineKeyboardButton("Evet", callback_data="kart_olustur_onay")
-        hayir_button = types.InlineKeyboardButton("Hayır", callback_data="kart_olustur_red")
-        markup.add(evet_button, hayir_button)
-        bot.send_message(chat_id, onay_mesaji, reply_markup=markup)
-    except ValueError:
-        bot.send_message(chat_id, "Geçersiz adet girişi!")
-
-@bot.callback_query_handler(func=lambda call: call.data in ["kart_olustur_onay", "kart_olustur_red"])
-def onay_secimi(call):
-    chat_id = call.message.chat.id
-    bot.answer_callback_query(call.id)
-    if call.data == "kart_olustur_onay":
-        kart_olustur(call.message)  # Kart oluşturma fonksiyonunu çağır
-    else:
-        bot.send_message(chat_id, "Niye seçtin o zaman OC 😒")
-
-def kart_olustur(message):
-    chat_id = message.chat.id
-    global card_data
-
-    try:
-        count = card_data.get("adet")
-        firma = card_data.get("firma")
-        yurt_tipi = card_data.get("yurt_tipi")
-
-        if card_data.get("type") == "cc_olustur":
-            cards = generate_credit_cards(count, bin_number=firma, yurt_tipi=yurt_tipi)
-            with open("H#shtaginc Seçili Kartlar.txt", "w", encoding="utf-8") as f:
-                f.write("\n".join(cards))
-            with open("H#shtaginc Seçili Kartlar.txt", "rb") as f:
-                bot.send_document(chat_id, f)
-        elif card_data.get("type") == "karisik_olustur":
-            cards = generate_credit_cards(count, yurt_tipi=yurt_tipi)
-            with open("H#shtaginc Karışık Kartlar.txt", "w", encoding="utf-8") as f:
-                f.write("\n".join(cards))
-            with open("H#shtaginc Karışık Kartlar.txt", "rb") as f:
-                bot.send_document(chat_id, f)
-        elif card_data.get("type") == "cc_cesitlilik":
-            cards = generate_credit_cards(count, card_types=[firma], yurt_tipi=yurt_tipi)
-            with open("H#shtaginc Çeşitli Kartlar.txt", "w", encoding="utf-8") as f:
-                f.write("\n".join(cards))
-            with open("H#shtaginc Çeşitli Kartlar.txt", "rb") as f:
-                bot.send_document(chat_id, f)
-    except Exception as e:
-        bot.send_message(chat_id, f"Kart oluştururken hata oluştu: {e}")
-    finally:
-        if chat_id in card_data:
-            del card_data[chat_id]  # Kart verilerini sil (finally içinde)
-
-
-# ... (Diğer fonksiyonlar aynı kalıyor)
-
-def generate_random_cards_handler(message):
-    chat_id = message.chat.id
-    try:
-        count = int(message.text)
-        card_data[chat_id] = {"type": "karisik_olustur", "adet": count, "yurt_tipi": card_data.get(chat_id, {}).get('yurt_tipi', 'Belirtilmedi')}
-
-        onay_mesaji = f"Seçimler:\n" \
-                      f"✅ Yurt Tipi: {card_data[chat_id].get('yurt_tipi', 'Belirtilmedi')}\n" \
-                      f"✅ Adet: {count}"
-        markup = types.InlineKeyboardMarkup(row_width=2)
-        evet_button = types.InlineKeyboardButton("Evet", callback_data="kart_olustur_onay")
-        hayir_button = types.InlineKeyboardButton("Hayır", callback_data="kart_olustur_red")
-        markup.add(evet_button, hayir_button)
-        bot.send_message(chat_id, onay_mesaji, reply_markup=markup)
-
-    except ValueError:
-        bot.send_message(chat_id, "Geçersiz adet girişi!")
-
-
-def generate_cc_cesitlilik_cards(message, card_types):
-    chat_id = message.chat.id
-    try:
-        count = int(message.text)
-        cards = generate_credit_cards(count, card_types=card_types)
-        with open("H#shtaginc Çeşitli Kartlar.txt", "w", encoding="utf-8") as f:
-            f.write("\n".join(cards))
-        with open("H#shtaginc Çeşitli Kartlar.txt", "rb") as f:
-            bot.send_document(chat_id, f)
-    except ValueError:
-        bot.send_message(chat_id, "Geçersiz sayı girişi!")
-
 
 @bot.callback_query_handler(func=lambda call: call.data == "iban_sorgu")
 def iban_sorgu(call):
     bot.send_message(call.message.chat.id, "Lütfen IBAN'ı girin:")
     bot.register_next_step_handler(call.message, handle_iban_check)
-
 
 def handle_iban_check(message):
     iban = message.text
@@ -287,7 +60,6 @@ def handle_iban_check(message):
         bot.send_message(message.chat.id, f"✅ {iban} geçerli bir IBAN'dır.")
     else:
         bot.send_message(message.chat.id, f"⛔ {iban} geçerli bir IBAN değildir.")
-
 
 @bot.callback_query_handler(func=lambda call: call.data == "iban_uret")
 def iban_uret(call):
@@ -297,7 +69,6 @@ def iban_uret(call):
     random_button = types.InlineKeyboardButton("Rastgele Ülke", callback_data="iban_uret_random")
     markup.add(tr_button, de_button, random_button)
     bot.send_message(call.message.chat.id, "Hangi ülke için IBAN oluşturulsun?", reply_markup=markup)
-
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("iban_uret_"))
 def handle_iban_uret_selection(call):
@@ -312,17 +83,14 @@ def handle_iban_uret_selection(call):
     iban = generate_random_iban(country_code)
     bot.send_message(call.message.chat.id, f"🎉 Rastgele IBAN: {iban}")
 
-
 @bot.callback_query_handler(func=lambda call: call.data == "cc_checker")
 def cc_checker(call):
     markup = types.ForceReply(selective=False)
-    bot.send_message(call.message.chat.id, "Lütfen combo dosyasını TXT olarak gönderin veya direkt olarak metin olarak yapıştırın.",
-                    reply_markup=markup)
+    bot.send_message(call.message.chat.id, "Lütfen combo dosyasını TXT olarak gönderin veya direkt olarak metin olarak yapıştırın.", reply_markup=markup)
     bot.register_next_step_handler(call.message, handle_cc_check)
 
-
 def handle_cc_check(message):
-    bot.send_message(message.chat.id, "Lütfen bekleyiniz... Kartlarınız doğrulanıyor.")
+    bot.send_message(message.chat.id, "Lütfen bekleyiniz...CHECK YAPILIYOR.")
     if message.document:
         try:
             file_info = bot.get_file(message.document.file_id)
@@ -334,7 +102,6 @@ def handle_cc_check(message):
     else:
         combo_content = message.text.splitlines()
         check_cc_list(message.chat.id, combo_content)
-
 
 def check_cc_list(chat_id, combo_content):
     headers = {
@@ -360,8 +127,7 @@ def check_cc_list(chat_id, combo_content):
 
     for kart in combo_content:
         kart = kart.strip()
-        if not kart:
-            continue
+        if not kart: continue
         url = f"https://www.xchecker.cc/api.php?cc={kart}"
         try:
             r = requests.get(url, headers=headers)
@@ -386,11 +152,11 @@ def check_cc_list(chat_id, combo_content):
     output += "ＥＲＲＯＲ ＣＡＲＤＳ:\n"
     output += "\n".join([res for res in results if "☠" in res]) + "\n"
 
-    with open("H#shtaginc Cc Check.txt", "w", encoding="utf-8") as f:
+    with open("H#shtaginc CC CHECK.txt", "w", encoding="utf-8") as f:
         f.write(output)
-    with open("H#shtaginc Cc Check.txt", "rb") as f:
+    with open("H#shtaginc CC CHECK.txt", "rb") as f:
         bot.send_document(chat_id, f)
-    bot.send_message(chat_id, f"✅ Live: {live_count}\n⛔ Declined: {declined_count}")
 
-
+    bot.send_message(chat_id, f"░▒▓█ ＣＣ ＣＨＥＣＫ ＳＯＮＵÇＬＡＲＩ █▓▒░\n\nToplam Kontrol Edilen Kart: {len(combo_content)}\n\n✅ LİVE CARDS: {live_count} (Oranı: %{ (live_count/len(combo_content))*100 if len(combo_content) else 0:.2f})\n\n⛔ DEC CARDS: {declined_count} (Oranı: %{(declined_count/len(combo_content))*100 if len(combo_content) else 0:.2f})\n\n☠ ERROR CARDS: {len(combo_content) - live_count - declined_count} (Oranı: %{( (len(combo_content) - live_count - declined_count)/len(combo_content) )*100 if len(combo_content) else 0:.2f})")
+    
 bot.infinity_polling()
